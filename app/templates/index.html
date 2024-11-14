@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel - Rá Tim Bum</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header class="bg-dark text-white text-center py-4 d-flex align-items-center">
+        <img src="{{ url_for('static', filename='Ratimbum.png') }}" alt="Ratimbum" class="img-fluid rounded-circle d-block" style="width: 80px; height: 80px; margin-right: 35%; margin-left: 2%">
+        <h2 style="color:#4B3062; background-color: white; padding: 10px; border-radius: 5px">Hotel Ratimbum</h2>
+    </header>
+
+    <section id="loginSec" class="container my-5 px-5 py-3 bg-white rounded shadow" style="width: 40%">
+        <h3 class="mt-3">Login:</h3>
+        <input type="text" id="login" name="data" style="width: 100%; height: 2.5em;">
+        <h3 class="mt-3">Senha:</h3>
+        <input type="password" id="senha" name="data" style="width: 100%; height: 2.5em;">
+        <div class="mt-3" style="margin-top: 10%; justify-content: end; display: flex">
+            <button type="button" class="btn btn-secondary" style="background: #4B3062; width:120px; height: 50px" onclick="saveLogin()">Logar</button>
+        </div>
+    </section>
+
+    <script>
+        function saveLogin() {
+            const login = document.getElementById('login').value;
+            const senha = document.getElementById('senha').value;
+
+            if (login === '' || senha === '') {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+
+            fetch('http://127.0.0.1:5000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: login, senha: senha })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.message === "Login realizado com sucesso!")
+                   window.location.href = '/booking';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

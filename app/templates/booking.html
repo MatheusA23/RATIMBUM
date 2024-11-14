@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel - Rá Tim Bum - Reservar</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header class="bg-dark text-white text-center py-4 d-flex align-items-center">
+        <img src="{{ url_for('static', filename='Ratimbum.png') }}" alt="Ratimbum" class="img-fluid rounded-circle d-block" style="width: 80px; height: 80px; margin-right: 35%; margin-left: 2%">
+        <h2 style="color:#4B3062; background-color: white; padding: 10px; border-radius: 5px">Hotel Ratimbum</h2>
+    </header>
+    <section id="reservaSec" class="container my-5 px-5 py-3 bg-white rounded shadow" style="width: 40%">
+        <h1 class="mt-3">Reservar quarto:</h1>
+        <div style="display: flex">
+            <h6>Tipo: </h6>
+            <select id="tiposDeQuarto" style="width: 70%; height: 2.5em; margin-top: 2%">
+            <option value="">Selecione um quarto...</option>
+        </select>
+
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px; margin-top: 1%">
+            <h6 class="mt-3">Entrada:</h6>
+            <input type="date" id="entrada" name="data" style="width: 30%; height: 2.5em;">
+            <h6 class="mt-3">Saída:</h6>
+            <input type="date" id="saida" name="data" style="width: 30%; height: 2.5em;">
+        </div>
+        <div style="display: flex; width: 100%; justify-content: space-between; align-items: center">
+            <div>
+                <h6>Preço: <span id="preco">R$ 0,00</span></h6>
+            </div>
+            <div class="mt-3" style="margin-top: 10%; justify-content: end; display: flex">
+                <button type="button" class="btn btn-secondary" style="background: #4B3062; width:120px; height: 50px" onclick="calcularValor()">Confirmar</button>
+                <button type="button" class="btn btn-secondary" style="margin-left: 2%; background: #4B3062; width:30px; height: 50px" onclick="mostrarPagamento()">></button>
+            </div>
+        </div>
+    </section>
+    <section id="pagamentoSec" class="container my-5 px-5 py-3 bg-white rounded shadow" style="width: 40%; display: none;">
+        <h1 class="mt-3">Pagamento:</h1>
+        <div class="form-group">
+            <label for="numeroCartao">Número do Cartão:</label>
+            <input type="text" class="form-control" id="numeroCartao" placeholder="Insira o número do cartão">
+        </div>
+        <div class="form-group">
+            <label for="validadeCartao">Validade:</label>
+            <input type="text" class="form-control" id="validadeCartao" placeholder="MM/AA">
+        </div>
+        <div class="form-group">
+            <label for="codigoSeguranca">Código de Segurança:</label>
+            <input type="text" class="form-control" id="codigoSeguranca" placeholder="CVV">
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between">
+            <button type="button" class="btn btn-secondary" style="margin-left: 2%; background: #4B3062; width:30px; height: 50px" onclick="mostrarQuartos()"><</button>
+            <button type="button" class="btn btn-secondary" style="margin-left: 2%; background: #4B3062; width:150px; height: 50px" onclick="paymentFinish()">Finalizar</button>
+        </div>
+    </section>
+    <button type="button" class="btn btn-secondary" style="background: #4B3062; width:40%; height: 50px; margin-left: 30%; margin-bottom: 2%" onclick="irminhasreservas()">Minhas reservas</button>
+    <script>
+        let quartosdisponiveis = [];
+        let type = "";
+        let data_entrada = "";
+        let data_saida = "";
+        let preco = "";
+        const tiposDeQuarto = [
+            { id: 1, tipo: 'INDIVIDUAL', preco: 150 },
+            { id: 2, tipo: 'DUPLO', preco: 250 },
+            { id: 3, tipo: 'SUITE', preco: 350 },
+        ];
+
+        function buscar_quartos() {
+            fetch('http://127.0.0.1:5000/quartos-disponiveis', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const todosOsQuartos = data;
+                for (const quarto of todosOsQuartos) {
+                    console.log(quarto);
+                    if (quarto.status === "DESOCUPADO") {
+                        quartosdisponiveis.push(quarto);
+                    }
+                }
+                console.log(quartosdisponiveis); // Para verificar a lista de quartos desocupados
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+
+        function preencherSelect(tiposDeQuarto) {
+            const selectElement = document.getElementById('tiposDeQuarto');
+            tiposDeQuarto.forEach(quarto => {
+                const option = document.createElement('option');
+                option.value = quarto.tipo; // Use quarto.tipo instead of quarto.id
+                option.text = quarto.tipo;
+                selectElement.appendChild(option);
+            });
+        }
+
+        function calcularValor() {
+            const tipoDeQuarto = document.getElementById('tiposDeQuarto').value;
+            type = tipoDeQuarto;
+            console.log(tipoDeQuarto);
+            const dataEntrada = new Date(document.getElementById('entrada').value);
+            data_entrada = dataEntrada;
+            const dataSaida = new Date(document.getElementById('saida').value);
+            data_saida = dataSaida;
+
+            if (!tipoDeQuarto || !dataEntrada || !dataSaida) {
+                alert('Por favor, preencha todos os campos.');
+                return;
+            }
+
+            const diffTime = Math.abs(dataSaida - dataEntrada);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            const quartoSelecionado = tiposDeQuarto.find(quarto => quarto.tipo == tipoDeQuarto);
+            const valorTotal = diffDays * quartoSelecionado.preco;
+            preco = valorTotal
+            document.getElementById('preco').innerText = `R$ ${valorTotal}`;
+        }
+
+        function mostrarPagamento() {
+            document.getElementById('reservaSec').style.display = 'none';
+            document.getElementById('pagamentoSec').style.display = 'block';
+        }
+
+        function mostrarQuartos(){
+            document.getElementById('reservaSec').style.display = 'block';
+            document.getElementById('pagamentoSec').style.display = 'none';
+        }
+
+        function paymentFinish(){
+            const tipoDeQuarto = type;
+            const quartosFiltrados = quartosdisponiveis.filter(quarto => quarto.tipo == tipoDeQuarto);
+            if (quartosFiltrados.length > 0) {
+                const quarto = quartosFiltrados[0];
+                console.log(quarto)
+                fetch('http://127.0.0.1:5000/reservar-quarto', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "id_quarto": quarto.id,
+                        "data_entrada": formatarData(data_entrada),
+                        "data_saida": formatarData(data_saida),
+                        "preco": preco
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    if (data.message === "Quarto reservado com sucesso!") {
+                         window.location.href = '/mybooking';
+                    }
+                });
+            } else {
+                alert('Não há quartos disponíveis do tipo selecionado.');
+            }
+        }
+
+        function formatarData(data) {
+           const ano = data.getFullYear();
+           const mes = String(data.getMonth() + 1).padStart(2, '0'); // getMonth() retorna 0-11, então adicionamos 1
+           const dia = String(data.getDate()).padStart(2, '0');
+           return `${ano}-${mes}-${dia}`;
+        }
+
+        function irminhasreservas(){
+            window.location.href = '/mybooking';
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            buscar_quartos();
+            preencherSelect(tiposDeQuarto);
+        });
+    </script>
+</body>
+</html>

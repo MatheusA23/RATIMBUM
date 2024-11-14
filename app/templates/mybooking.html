@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel - Rá Tim Bum - Reservar</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+     <header class="bg-dark text-white text-center py-4 d-flex align-items-center">
+        <img src="{{ url_for('static', filename='Ratimbum.png') }}" alt="Ratimbum" class="img-fluid rounded-circle d-block" style="width: 80px; height: 80px; margin-right: 35%; margin-left: 2%">
+        <h2 style="color:#4B3062; background-color: white; padding: 10px; border-radius: 5px">Hotel Ratimbum</h2>
+    </header>
+      <section id="reservaSec" class="container my-5 px-5 py-3 bg-white rounded shadow" style="width: 40%">
+        <h1 class="mt-3">Suas reservas:</h1>
+
+        <div id="reservasContainer"></div>
+
+    </section>
+         <button type="button" class="btn btn-secondary" style="background: #4B3062; width:40%; height: 50px; margin-left: 30%; margin-bottom: 2%" onclick="reservar()">Reservar</button>
+
+</body>
+<script>
+            function displayReservas(reservas) {
+                const container = document.getElementById('reservasContainer');
+                container.innerHTML = ''; // Clear previous content
+                reservas.forEach(reserva => {
+                    const reservaDiv = document.createElement('div');
+                    reservaDiv.classList.add('reserva');
+                    reservaDiv.setAttribute('data-id', reserva.id_reserva);
+                    reservaDiv.innerHTML = `
+                        <p><strong>ID Reserva:</strong> ${reserva.id_reserva}</p>
+                        <p><strong>Numero do quarto:</strong> ${reserva.id_quarto}</p>
+                        <p><strong>Preço: </strong>R$ ${reserva.preco}</p>
+                        <p><strong>Tipo Quarto:</strong> ${reserva.tipo_quarto}</p>
+                        <p><strong>Data Entrada:</strong> ${reserva.data_entrada}</p>
+                        <p><strong>Data Saída:</strong> ${reserva.data_saida}</p>
+                        <button type="button" class="btn btn-secondary" style="background: #4B3062; width:120px; height: 50px" onclick='editarReserva(${JSON.stringify(reserva)})'>Editar</button>
+                        <button type="button" class="btn btn-secondary" style="background: #4B3062; width:120px; height: 50px" onclick='excluirReserva(${JSON.stringify(reserva)})'>Excluir</button>
+                        <hr>
+                    `;
+                    container.appendChild(reservaDiv);
+                });
+            }
+
+            function editarReserva(reserva) {
+                const reservaDiv = document.querySelector(`div.reserva[data-id='${reserva.id_reserva}']`);
+                reservaDiv.innerHTML = `
+                    <p><strong>ID Reserva:</strong> ${reserva.id_reserva}</p>
+                    <p><strong>Numero do quarto:</strong> ${reserva.id_quarto}</p>
+                    <p><strong>Preço: </strong> R$ ${reserva.preco}</p>
+                    <p><strong>Tipo Quarto:</strong> ${reserva.tipo_quarto}</p>
+                    <input type="date" value="${reserva.data_entrada}" id="data_entrada_${reserva.id_reserva}">
+                    <input type="date" value="${reserva.data_saida}" id="data_saida_${reserva.id_reserva}">
+                    <p></p>
+                    <button type="button" class="btn btn-secondary" style="background: #4B3062; width:120px; height: 50px" onclick='salvarReserva(${JSON.stringify(reserva)})'>Salvar</button>
+                    <hr>
+                `;
+            }
+
+            function salvarReserva(reserva) {
+                const dataEntrada = document.getElementById(`data_entrada_${reserva.id_reserva}`).value;
+                const dataSaida = document.getElementById(`data_saida_${reserva.id_reserva}`).value;
+
+                fetch(`http://127.0.0.1:5000/editar-reserva/${reserva.id_reserva}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data_entrada: dataEntrada,
+                        data_saida: dataSaida
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Reserva atualizada com sucesso!') {
+                        alert('Reserva atualizada com sucesso!');
+                        minhasreservas(); // Refresh the reservations list
+                    } else {
+                        alert('Erro ao atualizar a reserva: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error updating reservation:', error));
+            }
+
+            function excluirReserva(reserva) {
+                const id = reserva.id_reserva;
+                fetch(`http://127.0.0.1:5000/excluir-reserva/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Reserva excluída com sucesso!') {
+                        alert('Reserva excluída com sucesso!');
+                        minhasreservas(); // Refresh the reservations list
+                    } else {
+                        alert('Erro ao excluir a reserva: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error deleting reservation:', error));
+            }
+
+            function minhasreservas() {
+                fetch('http://127.0.0.1:5000/minhas-reservas', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    displayReservas(data.reservas);
+                })
+                .catch(error => console.error('Error fetching reservations:', error));
+            }
+
+            function reservar(){
+                window.location.href = '/booking';
+            }
+            document.addEventListener('DOMContentLoaded', (event) => {
+                minhasreservas();
+            });
+</script>
+</html>
